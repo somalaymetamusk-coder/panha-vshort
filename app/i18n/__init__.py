@@ -18,6 +18,21 @@ _STRINGS: Dict[str, Dict[str, str]] = {
         "app_title": "Pnnha V-Short",
         "trial_remaining": "Trial: {days} Day",
         "trial_expired": "Trial expired",
+        "licensed_to": "Licensed: {label}",
+        "license_expired": "License expired",
+        "activate_license": "Activate license",
+
+        # Licensing dialog
+        "lic_dialog_title": "License",
+        "lic_paste_key": "Paste your license key below:",
+        "lic_current_status": "Current status",
+        "lic_hardware_id": "Hardware ID",
+        "lic_activate": "Activate",
+        "lic_deactivate": "Deactivate",
+        "lic_activated_ok": "Activated for {name}.",
+        "lic_activate_failed": "Activation failed: {err}",
+        "lic_confirm_deactivate": "Remove the activated license from this machine?",
+        "settings_licensing": "Licensing",
 
         # Main panel
         "detected_videos": "Detected Videos",
@@ -89,6 +104,8 @@ _STRINGS: Dict[str, Dict[str, str]] = {
         # Messages
         "msg_no_videos": "No videos in the input folder. Pick one in Settings.",
         "msg_trial_expired": "Your 30-day free trial has expired.",
+        "msg_need_license": "Your trial has ended. Activate a license to keep rendering.",
+        "msg_license_expired": "Your license has expired. Activate a new one to keep rendering.",
         "msg_done": "All jobs finished.",
         "msg_aborted": "Stopped by user.",
         "msg_ffmpeg_missing": "ffmpeg was not found on PATH. Please install it.",
@@ -101,6 +118,20 @@ _STRINGS: Dict[str, Dict[str, str]] = {
         "app_title": "Pnnha V-Short",
         "trial_remaining": "សាកល្បង៖ {days} ថ្ងៃ",
         "trial_expired": "ការសាកល្បងបានផុតកំណត់",
+        "licensed_to": "មានអាជ្ញាបណ្ណ៖ {label}",
+        "license_expired": "អាជ្ញាបណ្ណផុតកំណត់",
+        "activate_license": "បាតួរអាជ្ញាបណ្ណ",
+
+        "lic_dialog_title": "អាជ្ញាបណ្ណ",
+        "lic_paste_key": "បិទភ្ជាប់សោអាជ្ញាបណ្ណរបស់អ្នកនៅទីនេះ៖",
+        "lic_current_status": "ស្ថានភាពបច្ចុប្បន្ន",
+        "lic_hardware_id": "លេខសម្គាល់ម៉ាស៊ីន",
+        "lic_activate": "បាតួរ",
+        "lic_deactivate": "ដកការបាតួរ",
+        "lic_activated_ok": "បានបាតួរអាជ្ញាបណ្ណសម្រាប់ {name}។",
+        "lic_activate_failed": "ការបាតួរបរាជ័យ៖ {err}",
+        "lic_confirm_deactivate": "ដកអាជ្ញាបណ្ណចេញពីម៉ាស៊ីននេះ?",
+        "settings_licensing": "អាជ្ញាបណ្ណ",
 
         "detected_videos": "វីដេអូដែលរកឃើញ",
         "output": "លទ្ធផល",
@@ -166,6 +197,8 @@ _STRINGS: Dict[str, Dict[str, str]] = {
 
         "msg_no_videos": "មិនមានវីដេអូក្នុងថត។ សូមជ្រើសក្នុង Settings។",
         "msg_trial_expired": "ការសាកល្បង ៣០ ថ្ងៃបានផុតកំណត់។",
+        "msg_need_license": "ការសាកល្បងបានផុត។ សូមបាតួរអាជ្ញាបណ្ណដើម្បីបន្ត។",
+        "msg_license_expired": "អាជ្ញាបណ្ណរបស់អ្នកផុតកំណត់។ សូមបាតួរថ្មីដើម្បីបន្ត។",
         "msg_done": "ការងារទាំងអស់បានបញ្ចប់។",
         "msg_aborted": "បានបញ្ឈប់ដោយអ្នកប្រើ។",
         "msg_ffmpeg_missing": "មិនមាន ffmpeg ក្នុង PATH ទេ។ សូមដំឡើង។",

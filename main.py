@@ -8,6 +8,7 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication
 
 from app import APP_NAME
+from app.core.licensing import LicenseManager
 from app.core.settings_store import SettingsStore
 from app.core.trial import Trial
 from app.i18n import set_language
@@ -21,9 +22,10 @@ def main() -> int:
 
     store = SettingsStore()
     trial = Trial()
+    license_manager = LicenseManager(trial=trial)
     set_language(store.get("language", "en"))
 
-    w = MainWindow(store, trial)
+    w = MainWindow(store, trial, license_manager)
     w.show()
     return app.exec()
 

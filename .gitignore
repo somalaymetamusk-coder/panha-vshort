@@ -16,6 +16,11 @@ Thumbs.db
 # Runtime data (kept out of VCS, recreated by the app)
 data/settings.json
 data/trial.json
+data/license.json
+
+# Admin-only — never commit the private key or any issued license keys.
+keys/admin_private.pem
+keys-issued/
 
 # Build artifacts
 build/
