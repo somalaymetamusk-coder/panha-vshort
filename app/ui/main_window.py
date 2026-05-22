@@ -21,9 +21,11 @@ from ..core.ffmpeg_runner import (
 from ..core.hardware import resolve_encoder
 from ..core.preview import apply_preview_effects, first_frame, pil_to_qpixmap
 from ..core.render_worker import RenderWorker
+from ..core.licensing import LicenseManager
 from ..core.settings_store import SettingsStore
 from ..core.trial import Trial
 from ..i18n import get_language, set_language, subscribe, tr
+from .activate_dialog import ActivateDialog
 from .settings_dialog import SettingsDialog
 from .styles import QSS
 from .video_table import (
@@ -47,10 +49,12 @@ def _file_size_str(p: Path) -> str:
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, store: SettingsStore, trial: Trial) -> None:
+    def __init__(self, store: SettingsStore, trial: Trial,
+                 license_manager: Optional[LicenseManager] = None) -> None:
         super().__init__()
         self.store = store
         self.trial = trial
+        self.license_manager = license_manager or LicenseManager(trial=trial)
         self.scan: ScanResult = ScanResult()
         self.worker: Optional[RenderWorker] = None
 
@@ -135,7 +139,8 @@ class MainWindow(QMainWindow):
 
         self.trial_badge = QPushButton()
         self.trial_badge.setObjectName("TrialBadge")
-        self.trial_badge.setEnabled(False)
+        self.trial_badge.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.trial_badge.clicked.connect(self.open_activate_dialog)
 
         self.btn_min = QPushButton("—")
         self.btn_min.setObjectName("WinBtn")
@@ -331,12 +336,16 @@ class MainWindow(QMainWindow):
             audios=self.scan.audio_count,
             logos=self.scan.logo_count,
         ))
-        if self.trial.is_expired():
-            self.trial_badge.setText("⏳ " + tr("trial_expired"))
+        s = self.license_manager.display_status()
+        state = s.get("state")
+        if state == "licensed":
+            self.trial_badge.setText("🔑 " + tr("licensed_to", label=s.get("label", "")))
+        elif state == "expired":
+            self.trial_badge.setText("⚠ " + tr("license_expired"))
+        elif state == "trial":
+            self.trial_badge.setText("⏳ " + tr("trial_remaining", days=s.get("days", 0)))
         else:
-            self.trial_badge.setText(
-                "⏳ " + tr("trial_remaining", days=self.trial.days_remaining())
-            )
+            self.trial_badge.setText("⏳ " + tr("trial_expired"))
         self.footer.setText(tr("footer", year=APP_YEAR))
 
     # ---- filters -----------------------------------------------------
@@ -412,9 +421,24 @@ class MainWindow(QMainWindow):
             rename_index=int(self.store.get("rename_start", 1)),
         )
 
+    def open_activate_dialog(self) -> None:
+        dlg = ActivateDialog(self.license_manager, self)
+        dlg.exec()
+        self._update_labels()
+
     def start_render(self) -> None:
-        if self.trial.is_expired():
-            QMessageBox.warning(self, APP_NAME, tr("msg_trial_expired"))
+        if not self.license_manager.can_render():
+            # decide which message to show
+            if self.license_manager.info and self.license_manager.info.is_expired():
+                msg = tr("msg_license_expired")
+            else:
+                msg = tr("msg_need_license")
+            res = QMessageBox.warning(
+                self, APP_NAME, msg,
+                QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel,
+            )
+            if res == QMessageBox.StandardButton.Ok:
+                self.open_activate_dialog()
             return
         if not have_ffmpeg():
             QMessageBox.critical(self, APP_NAME, tr("msg_ffmpeg_missing"))
