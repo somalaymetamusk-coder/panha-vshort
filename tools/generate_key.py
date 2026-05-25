@@ -126,9 +126,23 @@ def cmd_mint(args: argparse.Namespace) -> int:
 
 
 def cmd_verify(args: argparse.Namespace) -> int:
-    """Decode + verify a key against the embedded public key — useful sanity check."""
+    """Decode + verify a key against the embedded public key — useful sanity check.
+
+    Reads the key from the positional argument, ``-`` (stdin), or a file path.
+    """
+    src = args.key
+    if src == "-":
+        key = sys.stdin.read().strip()
+    elif src and Path(src).is_file():
+        key = Path(src).read_text(encoding="utf-8").strip()
+    else:
+        key = (src or "").strip()
+    if not key:
+        print("no key provided. Pass the key as an argument, `-` for stdin, "
+              "or a path to a .txt file.", file=sys.stderr)
+        return 2
     try:
-        info = licensing.verify_key(args.key)
+        info = licensing.verify_key(key)
     except ValueError as e:
         print(f"INVALID: {e}", file=sys.stderr)
         return 1
@@ -161,7 +175,7 @@ def build_parser() -> argparse.ArgumentParser:
                       help="restrict to a subset of features (repeatable)")
     mint.set_defaults(func=cmd_mint)
 
-    verify = sub.add_parser("verify", help="verify a key string")
+    verify = sub.add_parser("verify", help="verify a key string, `-` for stdin, or a path to a .txt file")
     verify.add_argument("key")
     verify.set_defaults(func=cmd_verify)
 

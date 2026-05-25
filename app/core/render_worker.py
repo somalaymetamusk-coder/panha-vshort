@@ -76,9 +76,23 @@ class RenderWorker(QThread):
             self.log.emit("ffmpeg not found")
             self.finished_all.emit()
             return
+        if not self.items:
+            self.log.emit("no items to render")
+            self.finished_all.emit()
+            return
 
-        out_dir = Path(self.opts.output_folder)
-        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir_str = str(self.opts.output_folder or "").strip()
+        if not out_dir_str:
+            self.log.emit("output folder is not configured")
+            self.finished_all.emit()
+            return
+        out_dir = Path(out_dir_str)
+        try:
+            out_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            self.log.emit(f"cannot create output folder {out_dir}: {e}")
+            self.finished_all.emit()
+            return
 
         if self.merge and len(self.items) > 1:
             self._run_merge(out_dir)
@@ -119,6 +133,9 @@ class RenderWorker(QThread):
             return Path(random.choice(self.opts.audio_pool))
         if mode in ("mix", "mp3") and self.opts.audio_file:
             return Path(self.opts.audio_file)
+        if mode in ("random", "mp3") and self.opts.audio_pool:
+            # mp3 mode without an explicit file: deterministic first-of-pool
+            return Path(self.opts.audio_pool[0])
         return None
 
     def _process_item(self, row: int, item: VideoItem, out_dir: Path, on_done) -> None:

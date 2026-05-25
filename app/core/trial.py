@@ -2,8 +2,16 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import date, datetime
 from pathlib import Path
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(content, encoding="utf-8")
+    os.replace(tmp, path)
 
 TRIAL_DAYS = 30
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -29,8 +37,8 @@ class Trial:
         self._save()
 
     def _save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
+        _atomic_write_text(
+            self.path,
             json.dumps(
                 {
                     "start_date": self.start_date.isoformat(),
@@ -38,7 +46,6 @@ class Trial:
                 },
                 indent=2,
             ),
-            encoding="utf-8",
         )
 
     def days_remaining(self) -> int:

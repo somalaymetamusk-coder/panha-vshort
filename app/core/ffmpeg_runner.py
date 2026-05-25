@@ -21,12 +21,12 @@ class RenderOptions:
     show_timer: bool = False
     blur_background: bool = False
     logo_file: Optional[Path] = None
-    audio_mode: str = "keep"           # keep | mix | mute | random | mp3
-    audio_file: Optional[Path] = None  # used when audio_mode in {mix, mp3}
-    audio_pool: Tuple[Path, ...] = ()  # random pool
-    encoder: Encoder = None            # resolved Encoder
+    audio_mode: str = "keep"             # keep | mix | mute | random | mp3
+    audio_file: Optional[Path] = None    # used when audio_mode in {mix, mp3}
+    audio_pool: Tuple[Path, ...] = ()    # random pool
+    encoder: Optional[Encoder] = None    # resolved Encoder (auto-fallback)
     cpu_limit: int = 4
-    cut_parts: int = 1                 # >1 means cut-plus
+    cut_parts: int = 1                   # >1 means cut-plus
     rename_prefix: str = "video_"
     rename_index: int = 1
 
@@ -73,7 +73,13 @@ def video_duration(path: Path) -> float:
 # ---------------------------------------------------------------------------
 
 def _escape_drawtext(text: str) -> str:
-    # ffmpeg drawtext is picky — escape colons, backslashes, single quotes.
+    # ffmpeg drawtext is picky — escape backslashes, colons and single quotes
+    # so the filter parser doesn't choke. We deliberately do NOT escape `%`
+    # here: drawtext's text expansion treats a stray `%` as the start of a
+    # `%{...}` expansion, and the documented `\%` escape doesn't actually
+    # survive expansion in practice. Instead, callers should pass
+    # `expansion=none` on the drawtext for user-supplied text — see
+    # build_filter_graph.
     return (
         text.replace("\\", "\\\\")
             .replace(":", r"\:")
@@ -126,12 +132,18 @@ def build_filter_graph(opts: RenderOptions, has_logo_input: bool) -> str:
 
     drawtexts: List[str] = []
     if opts.overlay_text:
+        # expansion=none → drawtext treats every char (including `%`) as a
+        # literal. Lets users type "Audit Check 100%" without ffmpeg trying
+        # to evaluate `%...` as an expression.
         drawtexts.append(
             "drawtext=text='%s':fontcolor=white:fontsize=42:"
             "box=1:boxcolor=black@0.4:boxborderw=10:"
+            "expansion=none:"
             "x=(w-text_w)/2:y=h-100" % _escape_drawtext(opts.overlay_text)
         )
     if opts.show_timer:
+        # Timer text *is* an expansion expression — keep expansion=normal
+        # (the default) so `%{pts\:hms}` resolves to the playback time.
         drawtexts.append(
             "drawtext=text='%{pts\\:hms}':fontcolor=yellow:fontsize=32:"
             "box=1:boxcolor=black@0.4:boxborderw=8:x=20:y=h-60"
@@ -245,8 +257,12 @@ def build_merge_command(
 ) -> List[str]:
     """Build a concat-demuxer merge command. Caller must write the listing file."""
     enc = opts.encoder or resolve_encoder("auto")
+    # ffmpeg concat demuxer with `file '...'` lines: single quotes inside a path
+    # must be escaped as `'\''`.
+    def _concat_quote(p: Path) -> str:
+        return p.as_posix().replace("'", "'\\''")
     concat_list_path.write_text(
-        "\n".join(f"file '{p.as_posix()}'" for p in sources),
+        "\n".join(f"file '{_concat_quote(p)}'" for p in sources),
         encoding="utf-8",
     )
     cmd = [

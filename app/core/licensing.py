@@ -78,6 +78,26 @@ ALL_FEATURES = (
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 LICENSE_FILE = DATA_DIR / "license.json"
 
+# Value shipped in source control before anyone has ever run `--init`. We don't
+# refuse to start in that case, but anything signed by the matching private
+# key would also need to be in someone's git history — so it's just a marker
+# that the project admin hasn't generated their own keypair yet.
+_PLACEHOLDER_PK = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+
+def is_placeholder_public_key() -> bool:
+    """Return True when the embedded PUBLIC_KEY_B64URL hasn't been initialised
+    by the admin (i.e. nobody has run `tools/generate_key.py --init`)."""
+    return PUBLIC_KEY_B64URL == _PLACEHOLDER_PK
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    """Write *content* to *path* atomically (tmp file + rename)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(content, encoding="utf-8")
+    os.replace(tmp, path)
+
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -285,8 +305,8 @@ class LicenseManager:
     def save(self) -> None:
         if not self.info:
             return
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
+        _atomic_write_text(
+            self.path,
             json.dumps(
                 {
                     "key": self.key,
@@ -296,7 +316,6 @@ class LicenseManager:
                 },
                 indent=2, ensure_ascii=False,
             ),
-            encoding="utf-8",
         )
 
     # ------------------------------------------------------------------
