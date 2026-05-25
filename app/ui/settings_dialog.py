@@ -149,9 +149,9 @@ class SettingsDialog(QDialog):
         mform.addRow(QLabel(tr("settings_output_format")), self.fmt)
 
         tabs = QTabWidget()
-        tabs.addTab(general, tr("settings"))
-        tabs.addTab(effects, tr("settings_overlay_text"))
-        tabs.addTab(media, tr("settings_encoder"))
+        tabs.addTab(general, tr("settings_tab_general"))
+        tabs.addTab(effects, tr("settings_tab_effects"))
+        tabs.addTab(media, tr("settings_tab_media"))
 
         btns = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,

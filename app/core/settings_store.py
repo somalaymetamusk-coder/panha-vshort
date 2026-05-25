@@ -6,6 +6,13 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(content, encoding="utf-8")
+    os.replace(tmp, path)
+
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 SETTINGS_FILE = DATA_DIR / "settings.json"
 
@@ -50,10 +57,9 @@ class SettingsStore:
                 pass
 
     def save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
+        _atomic_write_text(
+            self.path,
             json.dumps(self._data, indent=2, ensure_ascii=False),
-            encoding="utf-8",
         )
 
     def get(self, key: str, default: Any = None) -> Any:

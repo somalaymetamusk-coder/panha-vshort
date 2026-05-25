@@ -1,16 +1,15 @@
 """Main window — matches the V-Short 3.2 layout from the screenshot."""
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
-from PyQt6.QtCore import Qt, QSize, pyqtSlot
-from PyQt6.QtGui import QAction, QIcon, QPixmap, QFont
+from PyQt6.QtCore import Qt, pyqtSlot
+from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import (
     QCheckBox, QComboBox, QFrame, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QMainWindow, QMenu, QMessageBox, QProgressBar, QPushButton,
-    QSpinBox, QSplitter, QTableView, QVBoxLayout, QWidget, QApplication,
+    QSpinBox, QSplitter, QTableView, QVBoxLayout, QWidget,
 )
 
 from .. import APP_AUTHOR, APP_NAME, APP_YEAR
@@ -21,10 +20,10 @@ from ..core.ffmpeg_runner import (
 from ..core.hardware import resolve_encoder
 from ..core.preview import apply_preview_effects, first_frame, pil_to_qpixmap
 from ..core.render_worker import RenderWorker
-from ..core.licensing import LicenseManager
+from ..core.licensing import LicenseManager, is_placeholder_public_key
 from ..core.settings_store import SettingsStore
 from ..core.trial import Trial
-from ..i18n import get_language, set_language, subscribe, tr
+from ..i18n import set_language, subscribe, tr, unsubscribe
 from .activate_dialog import ActivateDialog
 from .settings_dialog import SettingsDialog
 from .styles import QSS
@@ -107,6 +106,15 @@ class MainWindow(QMainWindow):
 
         if not have_ffmpeg():
             QMessageBox.warning(self, APP_NAME, tr("msg_ffmpeg_missing"))
+        if is_placeholder_public_key():
+            # Activation will never succeed in this build. Don't shout at every
+            # launch — just a single info dialog so the admin notices.
+            QMessageBox.information(
+                self, APP_NAME,
+                "Licensing keypair has not been initialised yet.\n"
+                "Run `python tools/generate_key.py --init` once, then commit "
+                "the change to app/core/licensing.py.",
+            )
 
     # =================================================================
     # builders
@@ -428,7 +436,6 @@ class MainWindow(QMainWindow):
 
     def start_render(self) -> None:
         if not self.license_manager.can_render():
-            # decide which message to show
             if self.license_manager.info and self.license_manager.info.is_expired():
                 msg = tr("msg_license_expired")
             else:
@@ -446,6 +453,9 @@ class MainWindow(QMainWindow):
         if not self.scan.videos:
             QMessageBox.information(self, APP_NAME, tr("msg_no_videos"))
             return
+        if not (self.store.get("output_folder") or "").strip():
+            QMessageBox.warning(self, APP_NAME, tr("msg_no_output_folder"))
+            return
         if self.worker and self.worker.isRunning():
             return
 
@@ -453,6 +463,11 @@ class MainWindow(QMainWindow):
         # mp3 / mix without a specific file → use first from audio pool if available
         if opts.audio_mode in ("mp3", "mix") and not opts.audio_file and opts.audio_pool:
             opts.audio_file = opts.audio_pool[0]
+        # mode requires audio but no source available → silently fall back to keep
+        # and tell the user so they're not surprised.
+        if opts.audio_mode in ("mix", "mp3", "random") and not opts.audio_file and not opts.audio_pool:
+            QMessageBox.information(self, APP_NAME, tr("msg_no_audio_source"))
+            opts.audio_mode = "keep"
 
         self.worker = RenderWorker(
             items=self.scan.videos,
@@ -473,10 +488,12 @@ class MainWindow(QMainWindow):
         self.pb_overall.setValue(0)
         self.pb_item.setValue(0)
         self.btn_start.setEnabled(False)
+        self.btn_stop.setEnabled(True)
         self.worker.start()
 
     def stop_render(self) -> None:
         if self.worker and self.worker.isRunning():
+            self.btn_stop.setEnabled(False)
             self.worker.stop()
 
     @pyqtSlot(int)
@@ -495,7 +512,37 @@ class MainWindow(QMainWindow):
 
     def _on_finished_all(self) -> None:
         self.btn_start.setEnabled(True)
+        self.btn_stop.setEnabled(True)
         QMessageBox.information(self, APP_NAME, tr("msg_done"))
+
+    def closeEvent(self, event) -> None:
+        # Stop the render thread cleanly and drop the i18n subscription.
+        try:
+            unsubscribe(self._retranslate)
+        except Exception:
+            pass
+        if self.worker and self.worker.isRunning():
+            # Disconnect signals BEFORE asking the worker to stop, so the
+            # final finished_all / item_finished emits don't fire slots on
+            # a window that's about to be destroyed (which previously
+            # popped a stray "All jobs finished" dialog after close).
+            for sig in (
+                self.worker.finished_all,
+                self.worker.item_started,
+                self.worker.item_progress,
+                self.worker.item_finished,
+                self.worker.overall_progress,
+                self.worker.log,
+            ):
+                try:
+                    sig.disconnect()
+                except (TypeError, RuntimeError):
+                    pass
+            self.worker.stop()
+            # give the worker up to ~5s to terminate; don't block the UI thread
+            # any longer than that.
+            self.worker.wait(5000)
+        super().closeEvent(event)
 
     def _on_log(self, line: str) -> None:
         # could route to a hidden debug panel; for now ignore unless verbose

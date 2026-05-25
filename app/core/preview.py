@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Optional
 
 import cv2
-import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 
@@ -14,6 +13,7 @@ def _try_load_font(size: int) -> ImageFont.ImageFont:
     candidates = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
         "C:\\Windows\\Fonts\\arialbd.ttf",
         "C:\\Windows\\Fonts\\arial.ttf",
     ]
@@ -23,7 +23,23 @@ def _try_load_font(size: int) -> ImageFont.ImageFont:
                 return ImageFont.truetype(c, size)
             except Exception:
                 continue
-    return ImageFont.load_default()
+    # last resort — the bitmap default font (size is ignored).
+    try:
+        return ImageFont.load_default(size=size)  # Pillow >= 10
+    except TypeError:
+        return ImageFont.load_default()
+
+
+def _font_height(font: ImageFont.ImageFont) -> int:
+    """Return a usable height in pixels for *font* across Pillow versions."""
+    size = getattr(font, "size", None)
+    if isinstance(size, (int, float)):
+        return int(size)
+    try:
+        bbox = font.getbbox("Ag")
+        return int(bbox[3] - bbox[1])
+    except Exception:
+        return 16
 
 
 def first_frame(path: Path) -> Optional[Image.Image]:
@@ -103,26 +119,27 @@ def apply_preview_effects(
     draw = ImageDraw.Draw(out)
     if overlay_text:
         font = _try_load_font(max(14, target_w // 18))
+        fh = _font_height(font)
         tw = draw.textlength(overlay_text, font=font)
         x = (target_w - int(tw)) // 2
-        y = target_h - int(font.size) - 24
-        # dark backdrop pill
+        y = target_h - fh - 24
         pad = 8
         draw.rectangle(
-            (x - pad, y - pad // 2, x + int(tw) + pad, y + int(font.size) + pad // 2),
+            (x - pad, y - pad // 2, x + int(tw) + pad, y + fh + pad // 2),
             fill=(0, 0, 0, 140),
         )
         draw.text((x, y), overlay_text, font=font, fill=(255, 255, 255, 255))
 
     if show_timer:
         font = _try_load_font(max(12, target_w // 22))
+        fh = _font_height(font)
         s = "00:00:01"
         tw = draw.textlength(s, font=font)
         pad = 6
-        draw.rectangle((10, target_h - int(font.size) - 14,
+        draw.rectangle((10, target_h - fh - 14,
                         10 + int(tw) + pad * 2, target_h - 4),
                        fill=(0, 0, 0, 140))
-        draw.text((10 + pad, target_h - int(font.size) - 10), s,
+        draw.text((10 + pad, target_h - fh - 10), s,
                   font=font, fill=(255, 255, 0, 255))
 
     return out.convert("RGB")

@@ -103,12 +103,17 @@ _STRINGS: Dict[str, Dict[str, str]] = {
 
         # Messages
         "msg_no_videos": "No videos in the input folder. Pick one in Settings.",
+        "msg_no_output_folder": "No output folder set. Pick one in Settings first.",
+        "msg_no_audio_source": "This audio mode needs an MP3 file or an audio folder. Falling back to keeping the original audio.",
         "msg_trial_expired": "Your 30-day free trial has expired.",
         "msg_need_license": "Your trial has ended. Activate a license to keep rendering.",
         "msg_license_expired": "Your license has expired. Activate a new one to keep rendering.",
         "msg_done": "All jobs finished.",
         "msg_aborted": "Stopped by user.",
         "msg_ffmpeg_missing": "ffmpeg was not found on PATH. Please install it.",
+        "settings_tab_general": "General",
+        "settings_tab_effects": "Effects",
+        "settings_tab_media": "Audio && Encoder",
         "footer": "© All rights reserved by HORN LYHENG (Admin-Kh) {year}",
     },
     "km": {
@@ -196,12 +201,17 @@ _STRINGS: Dict[str, Dict[str, str]] = {
         "settings_output_format": "ទម្រង់លទ្ធផល",
 
         "msg_no_videos": "មិនមានវីដេអូក្នុងថត។ សូមជ្រើសក្នុង Settings។",
+        "msg_no_output_folder": "មិនទាន់កំណត់ថតលទ្ធផល។ សូមជ្រើសក្នុង Settings សិន។",
+        "msg_no_audio_source": "របៀបសំឡេងនេះត្រូវការ MP3 ឬថតរួមនៃ MP3។ នឹងរក្សាសំឡេងដើមជំនួស។",
         "msg_trial_expired": "ការសាកល្បង ៣០ ថ្ងៃបានផុតកំណត់។",
         "msg_need_license": "ការសាកល្បងបានផុត។ សូមបាតួរអាជ្ញាបណ្ណដើម្បីបន្ត។",
         "msg_license_expired": "អាជ្ញាបណ្ណរបស់អ្នកផុតកំណត់។ សូមបាតួរថ្មីដើម្បីបន្ត។",
         "msg_done": "ការងារទាំងអស់បានបញ្ចប់។",
         "msg_aborted": "បានបញ្ឈប់ដោយអ្នកប្រើ។",
         "msg_ffmpeg_missing": "មិនមាន ffmpeg ក្នុង PATH ទេ។ សូមដំឡើង។",
+        "settings_tab_general": "ទូទៅ",
+        "settings_tab_effects": "បែបផែន",
+        "settings_tab_media": "សំឡេង && Encoder",
         "footer": "© រក្សាសិទ្ធិ HORN LYHENG (Admin-Kh) {year}",
     },
 }
