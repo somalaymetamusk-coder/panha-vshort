@@ -4,9 +4,11 @@ A PyQt6 desktop application for batch video processing — built to mirror the
 look-and-feel of V-Short 3.2 by HORN LYHENG (Admin-Kh).
 
 > Looking for the full developer build-from-scratch guide? See
-> [`docs/DEVELOPER_TUTORIAL.md`](docs/DEVELOPER_TUTORIAL.md) — covers every
-> module, the FFmpeg filter graph, PyInstaller packaging, licensing
-> workflow, and troubleshooting in English + ខ្មែរ.
+> [`docs/DEVELOPER_TUTORIAL.md`](docs/DEVELOPER_TUTORIAL.md) — a 28-section,
+> ~2,900-line **bilingual** tutorial covering project setup, architecture
+> diagrams, every module in lesson form (with exercises), the FFmpeg
+> filter graph, PyInstaller packaging, license-key workflow,
+> distribution, troubleshooting, and a KH ↔ EN glossary.
 
 Features
 --------
